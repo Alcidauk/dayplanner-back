@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/mydatabase
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/dayplannerdb
     depends_on:
       - db
     restart: unless-stopped
@@ -16,7 +16,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=mydatabase
+      - POSTGRES_DB=dayplannerdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

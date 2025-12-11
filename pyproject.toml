@@ -1,0 +1,10 @@
+[project]
+name = "dayplanner-back"
+version = "0.1"
+
+dependencies = [
+    "fastapi==0.124.2",
+    "uvicorn",
+    "psycopg2-binary",
+    "sqlalchemy"
+]
