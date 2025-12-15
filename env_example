@@ -1,0 +1,4 @@
+SECRET_KEY=SECRET_KEY #application secret key
+JWT_SECRET=JWT_SECRET #secret key for JWT token
+GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID #application google client ID for API
+GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET #application google client secret for API

@@ -6,5 +6,10 @@ dependencies = [
     "fastapi==0.124.2",
     "uvicorn",
     "psycopg2-binary",
-    "sqlalchemy"
+    "sqlalchemy",
+    "cryptography",
+    "authlib",
+    "google-api-python-client",
+    "httpx",
+    "python-jose[cryptography]"
 ]

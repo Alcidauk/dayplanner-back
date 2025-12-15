@@ -2,3 +2,4 @@
 dayplanner_back.egg-info/
 build/
 .idea/
+.env
