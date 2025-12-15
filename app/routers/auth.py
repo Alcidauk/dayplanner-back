@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from starlette.requests import Request
 from sqlalchemy.orm import Session
 from app.authentication.auth import oauth
 from app.database.database import get_db
@@ -12,13 +13,14 @@ router = APIRouter()
 
 
 @router.get("/google/login")
-async def login_via_google():
+async def login_via_google(request: Request):
     redirect_uri = "http://localhost:8000/auth/google/callback"
-    return await oauth.google.authorize_redirect(redirect_uri)
+    return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
 @router.get("/google/callback")
 async def auth_callback(request: Request, db: Session = Depends(get_db)):
+    print(f"request = {request}")
     token = await oauth.google.authorize_access_token(request)
     id_token = await oauth.google.parse_id_token(request, token)
 

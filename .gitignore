@@ -1,5 +1,9 @@
 *venv*
 dayplanner_back.egg-info/
+*__pycache__*
 build/
 .idea/
+envs/
+.env.local
+.env.docker
 .env

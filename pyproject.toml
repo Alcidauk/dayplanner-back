@@ -11,5 +11,7 @@ dependencies = [
     "authlib",
     "google-api-python-client",
     "httpx",
-    "python-jose[cryptography]"
+    "python-jose[cryptography]",
+    "itsdangerous>=2.1",
+    "dotenv"
 ]

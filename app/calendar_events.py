@@ -9,14 +9,16 @@ from app.models.user import User
 from authentication.security import decrypt_token
 import os
 
+from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+
 
 def get_google_credentials(user: User):
     return Credentials(
         token=decrypt_token(user.google_access_token),
         refresh_token=decrypt_token(user.google_refresh_token),
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=os.getenv("GOOGLE_CLIENT_ID"),
-        client_secret=os.getenv("GOOGLE_CLIENT_SECRET")
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET
     )
 
 
