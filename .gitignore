@@ -7,3 +7,4 @@ envs/
 .env.local
 .env.docker
 .env
+*.pyc
