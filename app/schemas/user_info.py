@@ -4,8 +4,7 @@ from pydantic import BaseModel
 
 class UserInfoCreate(BaseModel):
     place: str
-    interest: dict
-    user_id: Optional[int] = None
+    interests: list[str]
 
 
 class UserInfoResponse(UserInfoCreate):

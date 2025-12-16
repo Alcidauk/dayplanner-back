@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.authentication.security import get_current_user
 from app.models.user import User
 from app.models.user_info import UserInfo
 from app.schemas.user import UserCreate, UserResponse
@@ -27,11 +28,16 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/user_info", response_model=UserInfoResponse)
-def add_user_info(user_info: UserInfoCreate, db: Session = Depends(get_db)):
-    # TODO voir comment on fait pour un user_info existant, sûrement en vérifiant si la clé étrangère du user est déjà
-    #  existante
-    db_user_info = UserInfo(place=user_info.place, interests=user_info.interest)
-    db.add(db_user_info)
+def add_user_info(user_info: UserInfoCreate,
+                  user: User = Depends(get_current_user),
+                  db: Session = Depends(get_db)):
+    db_user_info = db.query(UserInfo).filter_by(user_id=user.id).first()
+    if db_user_info:
+        db_user_info.place = user_info.place
+        db_user_info.interests = user_info.interests
+    else:
+        db_user_info = UserInfo(user_id=user.id, place=user_info.place, interests=user_info.interests)
+        db.add(db_user_info)
     db.commit()
     db.refresh(db_user_info)
     return db_user_info
