@@ -1,1 +1,31 @@
 # dayplanner-back
+
+You must create the following files:
+- one file .env at the project root level must have a ENV_LOCAL=true/false variable
+- one folder envs/ with .env.docker and .env.local with the following info
+  (see config.py)
+
+SECRET_KEY=SECRET_KEY #application secret key
+
+JWT_SECRET=JWT_SECRET #secret key for JWT token
+
+GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID #application google client ID for API
+
+GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET #application google client secret for API
+
+REDIRECT_URI_LOGIN=REDIRECT_URI_LOGIN #redirect URI for google authentication
+
+DATABASE_URL=DATABASE_URL
+
+---------
+
+
+# Docker 
+docker-compose down 
+docker-compose build
+docker-compose up
+
+
+# local
+ENV_LOCAL=true
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload 
