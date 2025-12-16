@@ -36,10 +36,12 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     try:
         token = credentials.credentials
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        if not payload['sub']:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
         google_account = db.query(GoogleAccount).filter_by(google_sub=payload.get("sub")).first()
         user_id = google_account.user.id
-        if user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No user ID provided")
         user = db.query(User).filter_by(id=user_id).first()
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
