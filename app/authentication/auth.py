@@ -1,5 +1,4 @@
 from authlib.integrations.starlette_client import OAuth
-import os
 
 from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 

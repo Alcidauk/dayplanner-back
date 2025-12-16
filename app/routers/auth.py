@@ -8,24 +8,24 @@ from app.database.database import get_db
 from app.models.google_account import GoogleAccount
 from app.authentication.security import encrypt_token, create_jwt
 from app.models.user import User
+from config import REDIRECT_URI_LOGIN
 
 router = APIRouter()
 
 
 @router.get("/google/login")
 async def login_via_google(request: Request):
-    redirect_uri = "http://localhost:8000/auth/google/callback"
+    redirect_uri = REDIRECT_URI_LOGIN
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
 @router.get("/google/callback")
 async def auth_callback(request: Request, db: Session = Depends(get_db)):
-    print(f"request = {request}")
     token = await oauth.google.authorize_access_token(request)
-    id_token = await oauth.google.parse_id_token(request, token)
+    userinfo = await oauth.google.userinfo(token=token)
 
-    google_sub = id_token["sub"]
-    email = id_token["email"]
+    google_sub = userinfo["sub"]
+    email = userinfo["email"]
 
     account = db.query(GoogleAccount).filter_by(google_sub=google_sub).first()
     if not account:
@@ -37,7 +37,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     account.token_expiry = datetime.utcnow() + timedelta(seconds=token["expires_in"])
     db.commit()
     db.refresh(account)
-    user = db.query(User).filter_by(email=email)
+    user = db.query(User).filter_by(email=email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.google_account_id = account.id
