@@ -37,7 +37,7 @@ def add_user_info(user_info: UserInfoCreate,
         db_user_info.interests = user_info.interests
     else:
         db_user_info = UserInfo(user_id=user.id, place=user_info.place, interests=user_info.interests)
-        db.add(db_user_info)
+    db.add(db_user_info)
     db.commit()
     db.refresh(db_user_info)
     return db_user_info
