@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 from config import OPENAI_API_KEY
 from openai import OpenAI
 
-client = OpenAI(api_key=OPENAI_API_KEY)
-
 from app.models.user import User
 from app.models.user_info import UserInfo
 from app.authentication.security import get_current_user, get_db
 
 router = APIRouter()
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 @router.get("/activities")
