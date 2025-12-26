@@ -24,12 +24,30 @@ def get_activities(user: User = Depends(get_current_user),
     interests = user_info.interests
 
     prompt = f"""
-    Je suis un assistant qui recommande des activités. 
-    L'utilisateur se trouve à {place} et ses centres d'intérêt sont : 
-{', '.join(interests) if isinstance(interests, list) else interests}.
-    Peux-tu me proposer une liste de 5 activités adaptées à ce lieu et à ses intérêts ?
-    Merci de répondre sous forme de json exploitable directement par une application front
+    Tu es une API.
+
+    Réponds UNIQUEMENT par un JSON valide.
+    Aucun texte.
+    Aucune explication.
+    Aucun markdown.
+    Pas de ```.
+
+    Format EXACT attendu :
+    {{
+      "activities": [
+        {{
+          "title": "string",
+          "description": "string",
+          "location": "string",
+          "duration": "string"
+        }}
+      ]
+    }}
+
+    Lieu : {place}
+    Centres d'intérêt : {', '.join(interests) if isinstance(interests, list) else interests}
     """
+
     try:
         response = client.chat.completions.create(model="gpt-4o-mini",
                                                   messages=[
