@@ -7,7 +7,6 @@ from google.oauth2.credentials import Credentials
 
 from app.models.user import User
 from authentication.security import decrypt_token
-import os
 
 from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 

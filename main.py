@@ -1,14 +1,22 @@
 from fastapi import FastAPI
 from app.database.database import engine, Base
-from app.routers import user, auth
+from app.routers import user, auth, openai
 from starlette.middleware.sessions import SessionMiddleware
-
+from fastapi.middleware.cors import CORSMiddleware
 from config import SECRET_KEY
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # pour tests
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 Base.metadata.create_all(bind=engine, checkfirst=True)
 
 app.include_router(user.router, prefix="/user", tags=["User"])
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
+app.include_router(openai.router, prefix="/openai", tags=["OpenAI"])
 

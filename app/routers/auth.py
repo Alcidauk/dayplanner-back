@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
+from urllib.parse import urlencode
 from starlette.requests import Request
 from sqlalchemy.orm import Session
 from app.authentication.auth import oauth
@@ -8,7 +10,7 @@ from app.database.database import get_db
 from app.models.google_account import GoogleAccount
 from app.authentication.security import encrypt_token, create_jwt
 from app.models.user import User
-from config import REDIRECT_URI_LOGIN
+from config import REDIRECT_URI_LOGIN, FRONTEND_URL
 
 router = APIRouter()
 
@@ -45,8 +47,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     jwt = create_jwt({"sub": google_sub})
-    return {
-        "access_token": jwt,
-        "token_type": "bearer",
-        "authenticated": True
-    }
+    params = urlencode({"token": jwt})
+
+    redirect_url = f"{FRONTEND_URL}/google-callback?{params}"
+    return RedirectResponse(url=redirect_url)
