@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database.database import engine, Base
-from app.routers import user, auth, openai
+from app.routers import user, auth, activity, google_calendar
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from config import SECRET_KEY
@@ -18,5 +18,7 @@ Base.metadata.create_all(bind=engine, checkfirst=True)
 
 app.include_router(user.router, prefix="/user", tags=["User"])
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
-app.include_router(openai.router, prefix="/openai", tags=["OpenAI"])
+app.include_router(activity.router, prefix="/activity", tags=["Activity"])
+app.include_router(google_calendar.router, prefix="/google_calendar", tags=["Google-Calendar"])
+
 

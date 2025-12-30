@@ -1,5 +1,9 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+from app.models.activity import Activity
 from config import OPENAI_API_KEY
 from openai import OpenAI
 
@@ -22,7 +26,7 @@ def get_activities(user: User = Depends(get_current_user),
 
     place = user_info.place
     interests = user_info.interests
-
+    already_suggested_activities = db.query(Activity).filter_by(user_id=user.id).all()
     prompt = f"""
     Tu es une API.
 
@@ -46,6 +50,8 @@ def get_activities(user: User = Depends(get_current_user),
 
     Lieu : {place}
     Centres d'intérêt : {', '.join(interests) if isinstance(interests, list) else interests}
+    Les activités proposées ne doivent pas figurer 
+    dans la liste des activités déjà proposées : {already_suggested_activities}
     """
 
     try:
@@ -58,8 +64,17 @@ def get_activities(user: User = Depends(get_current_user),
                                                   ],
                                                   temperature=0.7,
                                                   max_tokens=800)
-        result_json = response.choices[0].message.content
-        return {"activities": result_json}
+        result_text = response.choices[0].message.content
+        result_json = json.loads(result_text)
+        for activity in result_json['activities']:
+            activity_obj = Activity(title=activity['title'],
+                                    description=activity['description'],
+                                    location=activity['location'],
+                                    duration=activity['duration'],
+                                    user_id=user.id)
+            db.add(activity_obj)
+        db.commit()
+        return result_json
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OpenAI error: {str(e)}")

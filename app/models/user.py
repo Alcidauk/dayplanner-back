@@ -12,4 +12,5 @@ class User(Base):
     email = Column(String, index=True)
     google_account = relationship("GoogleAccount", back_populates="user")
     user_info = relationship("UserInfo", back_populates="user", uselist=False)
+    activities = relationship("Activity", back_populates="user", uselist=False)
 
