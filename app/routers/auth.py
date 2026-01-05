@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session
 from app.authentication.auth import oauth
 from app.database.database import get_db
 from app.models.google_account import GoogleAccount
-from app.authentication.security import encrypt_token, create_jwt
+from app.authentication.security import encrypt_token, create_jwt, get_current_user, decrypt_token
 from app.models.user import User
 from config import REDIRECT_URI_LOGIN, FRONTEND_URL
+import requests
 
 router = APIRouter()
 
@@ -51,3 +52,30 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
 
     redirect_url = f"{FRONTEND_URL}/google-callback?{params}"
     return RedirectResponse(url=redirect_url)
+
+
+@router.post("/logout")
+def logout(user: User = Depends(get_current_user), db=Depends(get_db)):
+    if user.google_account:
+        access_token = decrypt_token(user.google_account.access_token)
+
+        # Révoquer le token Google
+        requests.post(
+            "https://oauth2.googleapis.com/revoke",
+            params={"token": access_token},
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+
+        # Nettoyage base
+        user.google_account.access_token = None
+        user.google_account.refresh_token = None
+        user.google_account.token_expiry = None
+
+        db.add(user.google_account)
+        db.commit()
+
+    return {
+        "success": True,
+        "message": "Logged out and Google access revoked"
+    }
+
