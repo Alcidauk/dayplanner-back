@@ -4,6 +4,7 @@ from jose import jwt
 
 from app.database.database import get_db
 from app.models.google_account import GoogleAccount
+from app.models.token import Token
 from app.models.user import User
 from config import SECRET_KEY, JWT_SECRET
 from fastapi import Depends, HTTPException, status
@@ -23,7 +24,7 @@ def decrypt_token(token_encrypted: str) -> str:
 
 def create_jwt(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=60 * 24)
+    expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, JWT_SECRET, algorithm="HS256")
 
@@ -31,24 +32,26 @@ def create_jwt(data: dict) -> str:
 security = HTTPBearer()
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security),
-                     db: Session = Depends(get_db)):
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+):
+    token_str = credentials.credentials
     try:
-        token = credentials.credentials
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        if not payload['sub']:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        google_account = db.query(GoogleAccount).filter_by(google_sub=payload.get("sub")).first()
-        user_id = google_account.user.id
-        if not user_id:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No user ID provided")
-        user = db.query(User).filter_by(id=user_id).first()
-        if not user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-        return user
+        payload = jwt.decode(token_str, JWT_SECRET, algorithms=["HS256"])
+        sub = payload.get("sub")
+        if not sub:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+        user_id = int(sub)
+
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        raise HTTPException(status_code=401, detail="Token expired")
     except jwt.JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Token error: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return user

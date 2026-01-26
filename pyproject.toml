@@ -14,5 +14,8 @@ dependencies = [
     "python-jose[cryptography]",
     "itsdangerous>=2.1",
     "dotenv",
-    "openai"
+    "openai",
+    "passlib==1.7.4",
+    "pydantic[email]",
+    "alembic"
 ]

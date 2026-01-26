@@ -51,7 +51,8 @@ def get_activities(user: User = Depends(get_current_user),
     Lieu : {place}
     Centres d'intérêt : {', '.join(interests) if isinstance(interests, list) else interests}
     Les activités proposées ne doivent pas figurer 
-    dans la liste des activités déjà proposées : {already_suggested_activities}
+    dans la liste des activités déjà proposées : {[asa.title for asa in already_suggested_activities]} 
+    et doivent être des activités réelles
     """
 
     try:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from googleapiclient.discovery import build
 from app.authentication.security import get_current_user
-from app.calendar_events import get_google_credentials
+from app.lib.calendar_events import get_google_credentials, add_event_to_calendar
 from app.models.user import User
 from datetime import datetime
 
@@ -40,3 +40,15 @@ def get_calendar_events(user: User = Depends(get_current_user)):
     ]
 
     return {"events": formatted_events}
+
+
+@router.post("/add_event")
+def add_event(event_body: dict, user: User = Depends(get_current_user)):
+    if not user.google_account:
+        raise HTTPException(status_code=403, detail="User not connected to Google")
+    try:
+        add_event_to_calendar(user, event_body)
+        print(f'evenement ajouté: {event_body}')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"success": True, "message": "Événement ajouté à Google Calendar"}
