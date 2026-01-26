@@ -108,6 +108,11 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
+    account.token_id = token.id
+    account.user_id = user.id
+    db.add(account)
+    db.commit()
+
     jwt = create_jwt({"sub": str(user.id)})
     params = urlencode({"token": jwt})
 

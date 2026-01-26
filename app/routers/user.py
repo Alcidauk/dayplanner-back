@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.authentication.auth import hash_password
@@ -42,4 +42,15 @@ def add_user_info(user_info: UserInfoCreate,
     db.add(db_user_info)
     db.commit()
     db.refresh(db_user_info)
+    return db_user_info
+
+
+@router.get("/user_info", response_model=UserInfoResponse)
+def get_user_info(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_user_info = db.query(UserInfo).filter_by(user_id=user.id).first()
+    if not db_user_info:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User info not found"
+        )
     return db_user_info
