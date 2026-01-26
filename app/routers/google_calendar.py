@@ -42,8 +42,8 @@ def get_calendar_events(user: User = Depends(get_current_user)):
     return {"events": formatted_events}
 
 
-@router.post("/add_event")
-def add_event(event_body: dict, user: User = Depends(get_current_user)):
+@router.post("/add_google_event")
+def add_google_event(event_body: dict, user: User = Depends(get_current_user)):
     if not user.google_account:
         raise HTTPException(status_code=403, detail="User not connected to Google")
     try:
