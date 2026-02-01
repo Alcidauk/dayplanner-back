@@ -29,6 +29,15 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 
+@router.get("/current_user")
+def get_current_user(user: User = Depends(get_current_user)):
+    return {
+        "name": user.name,
+        "surname": user.surname,
+        "email": user.email,
+    }
+
+
 @router.put("/user_info", response_model=UserInfoResponse)
 def add_user_info(user_info: UserInfoCreate,
                   user: User = Depends(get_current_user),

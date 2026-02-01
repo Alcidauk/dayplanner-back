@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/events")
-def get_calendar_events(user: User = Depends(get_current_user)):
+def get_calendar_events(user: User = Depends(get_current_user), date=""):
     if not user.google_account_id:
         raise HTTPException(status_code=400, detail="Google account not linked")
 
@@ -27,18 +27,24 @@ def get_calendar_events(user: User = Depends(get_current_user)):
     ).execute()
 
     events = events_result.get("items", [])
-
     formatted_events = [
         {
             "id": event.get("id"),
-            "title": event.get("summary"),
+            "summary": event.get("summary"),
             "start": event["start"].get("dateTime", event["start"].get("date")),
             "end": event["end"].get("dateTime", event["end"].get("date")),
             "location": event.get("location"),
         }
         for event in events
     ]
-
+    if date:
+        date_events = []
+        for event in formatted_events:
+            event_start_date = event['start'].split('T')[0]
+            target_date = date.split('T')[0]
+            if event_start_date == target_date:
+                date_events.append(event)
+        return {"events": date_events}
     return {"events": formatted_events}
 
 
