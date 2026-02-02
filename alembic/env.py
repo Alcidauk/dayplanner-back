@@ -39,12 +39,18 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
-SQLALCHEMY_DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/dayplannerdb"
-
 
 def run_migrations_online():
     """Run migrations in 'online' mode."""
-    connectable = create_engine(SQLALCHEMY_DATABASE_URL)
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        config.set_main_option("sqlalchemy.url", database_url)
+
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
 
     with connectable.connect() as connection:
         context.configure(
