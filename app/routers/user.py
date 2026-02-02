@@ -30,7 +30,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/current_user")
-def get_current_user(user: User = Depends(get_current_user)):
+def get_logged_user(user: User = Depends(get_current_user)):
     return {
         "name": user.name,
         "surname": user.surname,
