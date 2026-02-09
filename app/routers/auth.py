@@ -11,10 +11,12 @@ from app.models.google_account import GoogleAccount
 from app.models.token import Token
 from app.authentication.security import encrypt_token, create_jwt, get_current_user, decrypt_token
 from app.models.user import User
-from app.schemas.user import LoginResponse, LoginRequest
+from app.schemas.user import LoginResponse, LoginRequest, RefreshTokenRequest
 from config import REDIRECT_URI_LOGIN, FRONTEND_URL
 import requests
 import secrets
+
+from constants import ONE_HOUR_IN_SECONDS
 
 router = APIRouter()
 
@@ -37,7 +39,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
     access_token = create_jwt({"sub": str(user.id)})
     refresh_token_str = secrets.token_urlsafe(32)
-    expiry = datetime.utcnow() + timedelta(days=30)
+    expiry = datetime.utcnow() + timedelta(seconds=ONE_HOUR_IN_SECONDS)
 
     token_obj = Token(
         access_token=encrypt_token(access_token),
@@ -57,13 +59,67 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     return {
         "access_token": access_token,
         "refresh_token": refresh_token_str,
-        "token_expiry": expiry.isoformat(),
+        "expires_in": ONE_HOUR_IN_SECONDS,
         "token_type": "bearer",
         "user": {
             "id": user.id,
             "email": user.email,
         }
     }
+
+
+@router.post("/refresh")
+def refresh_token(data: RefreshTokenRequest, db: Session = Depends(get_db)):
+    """
+    Rafraîchir l'access token avec le refresh token
+    """
+    try:
+        token_record = db.query(Token).filter(
+            Token.refresh_token == encrypt_token(data.refresh_token),
+            Token.token_expiry > datetime.utcnow()
+        ).first()
+
+        if not token_record:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token"
+            )
+
+        user = db.query(User).filter(id=token_record.user_id).first()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        new_access_token = create_jwt({"sub": str(user.id)})
+
+        new_refresh_token = secrets.token_urlsafe(32)
+        new_expiry = datetime.utcnow() + timedelta(seconds=ONE_HOUR_IN_SECONDS)
+
+        token_record.access_token = encrypt_token(new_access_token)
+        token_record.refresh_token = encrypt_token(new_refresh_token)
+        token_record.token_expiry = new_expiry
+
+        db.commit()
+
+        return {
+            "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
+            "expires_in": ONE_HOUR_IN_SECONDS,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
 
 
 @router.get("/google/login")

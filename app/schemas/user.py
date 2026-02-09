@@ -26,4 +26,15 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
+    refresh_token: str
+    expires_in: int
+    user: dict
+    token_type: str = "bearer"
+
+
+class RefreshTokenRequest(BaseModel):
+    access_token: str
+    refresh_token: str
+    expires_in: int
+    user: dict
     token_type: str = "bearer"
