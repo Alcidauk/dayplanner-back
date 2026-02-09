@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.activity import Activity
-from app.schemas.activity import ActivityResponse, ActivityCreate
+from app.schemas.activity import ActivityResponse
 from config import OPENAI_API_KEY
 from openai import OpenAI
 
 from app.models.user import User
 from app.models.user_info import UserInfo
 from app.authentication.security import get_current_user, get_db
+from sqlalchemy import desc
 
 router = APIRouter()
 
@@ -34,8 +35,14 @@ def add_activity(activity: dict,
     return activity_obj
 
 
-@router.get("/activities")
-def get_activities(user: User = Depends(get_current_user),
+@router.get("/activities_manual")
+def get_activities_from_db(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    activities = db.query(Activity).filter_by(user_id=user.id, source='user').order_by(desc(Activity.id)).all()
+    return {"activities": activities}
+
+
+@router.get("/activities_openai")
+def get_activities_from_openai(user: User = Depends(get_current_user),
                    db: Session = Depends(get_db)):
     user_info = db.query(UserInfo).filter_by(user_id=user.id).first()
     if not user_info:
