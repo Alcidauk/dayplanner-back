@@ -12,3 +12,4 @@ class Activity(Base):
     duration = Column(String, index=True)
     user = relationship("User", back_populates="activities", uselist=False)
     user_id = Column(Integer, ForeignKey("users.id"))
+    source = Column(String, index=True)

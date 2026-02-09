@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.activity import Activity
+from app.schemas.activity import ActivityResponse, ActivityCreate
 from config import OPENAI_API_KEY
 from openai import OpenAI
 
@@ -14,6 +15,23 @@ from app.authentication.security import get_current_user, get_db
 router = APIRouter()
 
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+
+@router.post("/add_activity", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
+def add_activity(activity: dict,
+                 user: User = Depends(get_current_user),
+                 db: Session = Depends(get_db)):
+
+    activity_obj = Activity(title=activity['title'],
+                            description=activity['description'],
+                            location=activity['location'],
+                            duration=activity['duration'],
+                            user_id=user.id,
+                            source='user'
+                            )
+    db.add(activity_obj)
+    db.commit()
+    return activity_obj
 
 
 @router.get("/activities")
@@ -72,7 +90,8 @@ def get_activities(user: User = Depends(get_current_user),
                                     description=activity['description'],
                                     location=activity['location'],
                                     duration=activity['duration'],
-                                    user_id=user.id)
+                                    user_id=user.id,
+                                    source='openai')
             db.add(activity_obj)
         db.commit()
         return result_json
