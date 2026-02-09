@@ -175,7 +175,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
 
     params = urlencode({"accessToken": access_token,
                         "refreshToken": refresh_token_str,
-                        "expires_in": ONE_HOUR_IN_SECONDS,
+                        "expiresIn": ONE_HOUR_IN_SECONDS,
                         })
 
     redirect_url = f"{FRONTEND_URL}/google-callback?{params}"
