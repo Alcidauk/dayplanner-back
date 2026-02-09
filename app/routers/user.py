@@ -35,6 +35,7 @@ def get_logged_user(user: User = Depends(get_current_user)):
         "name": user.name,
         "surname": user.surname,
         "email": user.email,
+        "google_account_id": user.google_account_id
     }
 
 

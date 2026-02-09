@@ -147,10 +147,14 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    access_token = create_jwt({"sub": str(user.id)})
+    refresh_token_str = secrets.token_urlsafe(32)
+    expiry = datetime.utcnow() + timedelta(seconds=ONE_HOUR_IN_SECONDS)
+
     token = Token(
-        access_token=encrypt_token(token_data.get("access_token")),
-        refresh_token=encrypt_token(token_data.get("refresh_token")),
-        token_expiry=datetime.utcnow() + timedelta(seconds=token_data.get("expires_in")),
+        access_token=encrypt_token(access_token),
+        refresh_token=encrypt_token(refresh_token_str),
+        token_expiry=expiry,
         google_account_id=account.id,
         user_id=user.id
     )
@@ -169,8 +173,10 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     db.add(account)
     db.commit()
 
-    jwt = create_jwt({"sub": str(user.id)})
-    params = urlencode({"token": jwt})
+    params = urlencode({"accessToken": access_token,
+                        "refreshToken": refresh_token_str,
+                        "expires_in": ONE_HOUR_IN_SECONDS,
+                        })
 
     redirect_url = f"{FRONTEND_URL}/google-callback?{params}"
     return RedirectResponse(url=redirect_url)
