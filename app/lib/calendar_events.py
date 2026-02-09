@@ -2,6 +2,7 @@
 # TODO je l'ai mis la pour le moment ce sera utilisable plus tard
 """
 from fastapi import HTTPException
+from google.auth.transport.requests import Request as GoogleRequest
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
@@ -12,13 +13,16 @@ from config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 
 
 def get_google_credentials(user: User):
-    return Credentials(
-        token=decrypt_token(user.google_account.token[0].access_token),
-        refresh_token=decrypt_token(user.google_account.token[0].refresh_token),
+    credentials = Credentials(
+        token=decrypt_token(user.google_account.token[0].google_access_token),
+        refresh_token=decrypt_token(user.google_account.token[0].google_refresh_token),
         token_uri="https://oauth2.googleapis.com/token",
         client_id=GOOGLE_CLIENT_ID,
         client_secret=GOOGLE_CLIENT_SECRET
     )
+    if credentials.expired and credentials.refresh_token:
+        credentials.refresh(GoogleRequest())
+    return credentials
 
 
 def add_event_to_calendar(user: User, event_body: dict):

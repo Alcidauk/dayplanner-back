@@ -132,7 +132,7 @@ async def login_via_google(request: Request):
 async def auth_callback(request: Request, db: Session = Depends(get_db)):
     token_data = await oauth.google.authorize_access_token(request)
     userinfo = await oauth.google.userinfo(token=token_data)
-
+    print("TOKEN DATA:", token_data)
     google_sub = userinfo["sub"]
     email = userinfo["email"]
 
@@ -147,17 +147,21 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    access_token = create_jwt({"sub": str(user.id)})
-    refresh_token_str = secrets.token_urlsafe(32)
-    expiry = datetime.utcnow() + timedelta(seconds=ONE_HOUR_IN_SECONDS)
+    app_access_token = create_jwt({"sub": str(user.id)})
+    app_refresh_token = secrets.token_urlsafe(32)
 
     token = Token(
-        access_token=encrypt_token(access_token),
-        refresh_token=encrypt_token(refresh_token_str),
-        token_expiry=expiry,
+        access_token=encrypt_token(app_access_token),
+        refresh_token=encrypt_token(app_refresh_token),
+        token_expiry=datetime.utcnow() + timedelta(seconds=ONE_HOUR_IN_SECONDS),
+
+        google_access_token=encrypt_token(token_data.get("access_token")),
+        google_refresh_token=encrypt_token(token_data.get("refresh_token")),
+        google_token_expiry=datetime.utcnow() + timedelta(seconds=token_data.get("expires_in")),
         google_account_id=account.id,
         user_id=user.id
     )
+
     db.add(token)
     db.commit()
     db.refresh(token)
@@ -169,14 +173,17 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     db.refresh(user)
 
     account.token_id = token.id
+    if token_data.get("refresh_token"):
+        account.google_refresh_token = encrypt_token(token_data["refresh_token"])
     account.user_id = user.id
     db.add(account)
     db.commit()
 
-    params = urlencode({"accessToken": access_token,
-                        "refreshToken": refresh_token_str,
-                        "expiresIn": ONE_HOUR_IN_SECONDS,
-                        })
+    params = urlencode({
+        "accessToken": app_access_token,
+        "refreshToken": app_refresh_token,
+        "expiresIn": ONE_HOUR_IN_SECONDS,
+    })
 
     redirect_url = f"{FRONTEND_URL}/google-callback?{params}"
     return RedirectResponse(url=redirect_url)

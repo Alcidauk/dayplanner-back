@@ -9,6 +9,9 @@ class TokenCreate(BaseModel):
     token_expiry: Optional[datetime] = None
     user_id: Optional[int] = None
     google_account_id: Optional[int] = None
+    google_access_token: Optional[str] = None
+    google_refresh_token: Optional[str] = None
+    google_token_expiry: Optional[int] = None
 
 
 class TokenResponse(TokenCreate):
