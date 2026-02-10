@@ -12,7 +12,7 @@ from app.database.database import get_db
 router = APIRouter()
 
 
-@router.put("/", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(
         User.name == user.name,
@@ -39,7 +39,7 @@ def get_logged_user(user: User = Depends(get_current_user)):
     }
 
 
-@router.put("/user_info", response_model=UserInfoResponse)
+@router.post("/user_info", response_model=UserInfoResponse)
 def add_user_info(user_info: UserInfoCreate,
                   user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
