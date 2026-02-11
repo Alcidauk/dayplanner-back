@@ -11,8 +11,12 @@ class UserCreate(BaseModel):
     google_account_id: Optional[int] = None
 
 
-class UserResponse(UserCreate):
+class UserResponse(BaseModel):
     id: int
+    name: str
+    surname: str
+    email: str
+    google_account_id: Optional[int] = None
 
     model_config = {
         "from_attributes": True

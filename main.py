@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from app.database.database import engine, Base
 from app.routers import user, auth, activity, google_calendar
@@ -6,10 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import SECRET_KEY
 
 app = FastAPI()
+cors_origins = os.getenv("CORS_ORIGINS", "").split(",")
+
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # pour tests
+    allow_origins=cors_origins,  # pour tests
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
