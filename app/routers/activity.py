@@ -17,7 +17,7 @@ from sqlalchemy import desc
 router = APIRouter()
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
-ollama_client = ollama.Client(host='OLLAMA_BASE_URL')
+ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
 
 
 @router.post("/add_activity", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
@@ -86,8 +86,6 @@ def get_activities_from_ai(source: str = "openai", user: User = Depends(get_curr
                                                              ],
                                                              temperature=0.7,
                                                              max_tokens=800)
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"{source} error: {response.text}")
             result_text = response.choices[0].message.content
         except requests.exceptions.ConnectionError:
             raise HTTPException(status_code=503, detail=f"Ollama is not running.Make sure {source} is started.")
@@ -107,8 +105,6 @@ def get_activities_from_ai(source: str = "openai", user: User = Depends(get_curr
                     "temperature": 0.7
                 }
             )
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"{source} error: {response.text}")
             result_text = response["response"]
         except requests.exceptions.ConnectionError:
             raise HTTPException(status_code=503, detail=f"Ollama is not running.Make sure {source} is started.")

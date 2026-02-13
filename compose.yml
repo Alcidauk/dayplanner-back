@@ -7,10 +7,21 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/dayplannerdb
+      - OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       - db
+      - ollama
     restart: unless-stopped
 
+  ollama:
+    build:
+      context: ./ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        limits:
+          memory: 6G
   db:
     image: postgres:15
     environment:
@@ -25,4 +36,3 @@ services:
 
 volumes:
   postgres_data:
-
