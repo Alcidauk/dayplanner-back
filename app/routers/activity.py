@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.activity import Activity
 from app.schemas.activity import ActivityResponse
-from config import OPENAI_API_KEY
+from config import OPENAI_API_KEY, OLLAMA_MODEL, OLLAMA_BASE_URL
 from openai import OpenAI
 
 from app.models.user import User
@@ -17,8 +17,6 @@ from sqlalchemy import desc
 router = APIRouter()
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
-OLLAMA_BASE_URL = "http://localhost:11434"
-OLLAMA_MODEL = "llama2"  # ou "mistral", "phi3", etc.
 
 
 @router.post("/add_activity", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
@@ -44,7 +42,7 @@ def get_activities_from_db(user: User = Depends(get_current_user), db: Session =
 
 
 @router.get("/activities/{source}")
-def get_activities_from_openai(source: str = "openai", user: User = Depends(get_current_user),
+def get_activities_from_ai(source: str = "openai", user: User = Depends(get_current_user),
                                db: Session = Depends(get_db)):
     user_info = db.query(UserInfo).filter_by(user_id=user.id).first()
     if not user_info:
