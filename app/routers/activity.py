@@ -25,7 +25,6 @@ OLLAMA_MODEL = "llama2"  # ou "mistral", "phi3", etc.
 def add_activity(activity: dict,
                  user: User = Depends(get_current_user),
                  db: Session = Depends(get_db)):
-
     activity_obj = Activity(title=activity['title'],
                             description=activity['description'],
                             location=activity['location'],
@@ -45,7 +44,8 @@ def get_activities_from_db(user: User = Depends(get_current_user), db: Session =
 
 
 @router.get("/activities/{source}")
-def get_activities_from_openai(source: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_activities_from_openai(source: str = "openai", user: User = Depends(get_current_user),
+                               db: Session = Depends(get_db)):
     user_info = db.query(UserInfo).filter_by(user_id=user.id).first()
     if not user_info:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
