@@ -17,5 +17,6 @@ dependencies = [
     "openai",
     "passlib==1.7.4",
     "pydantic[email]",
-    "alembic"
+    "alembic",
+    "ollama"
 ]

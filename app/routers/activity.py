@@ -1,6 +1,6 @@
 import json
 import requests
-
+import ollama
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -17,6 +17,7 @@ from sqlalchemy import desc
 router = APIRouter()
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
+ollama_client = ollama.Client(host='OLLAMA_BASE_URL')
 
 
 @router.post("/add_activity", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
@@ -97,20 +98,18 @@ def get_activities_from_ai(source: str = "openai", user: User = Depends(get_curr
 
     elif source == "ollama":
         try:
-            response = requests.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "temperature": 0.7,
-                    "stream": False,
-                    "format": "json"
-                },
-                timeout=120
+            response = ollama_client.generate(
+                model=OLLAMA_MODEL,
+                prompt=prompt,
+                stream=False,
+                format="json",
+                options={
+                    "temperature": 0.7
+                }
             )
             if response.status_code != 200:
                 raise HTTPException(status_code=500, detail=f"{source} error: {response.text}")
-            result_text = response.json()["response"]
+            result_text = response["response"]
         except requests.exceptions.ConnectionError:
             raise HTTPException(status_code=503, detail=f"Ollama is not running.Make sure {source} is started.")
         except json.JSONDecodeError:
