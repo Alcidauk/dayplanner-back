@@ -28,13 +28,13 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="email not found"
+            detail="Adresse email non trouvée"
         )
 
     if not verify_password(data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid password"
+            detail="Mot de passe invalide"
         )
 
     access_token = create_jwt({"sub": str(user.id)})
@@ -82,7 +82,7 @@ def refresh_token(data: RefreshTokenRequest, db: Session = Depends(get_db)):
         if not token_record:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired refresh token"
+                detail="Le refresh token est invalide ou expiré"
             )
 
         user = db.query(User).filter(id=token_record.user_id).first()
@@ -90,7 +90,7 @@ def refresh_token(data: RefreshTokenRequest, db: Session = Depends(get_db)):
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                detail="Utilisateur non trouvé"
             )
 
         new_access_token = create_jwt({"sub": str(user.id)})
@@ -145,7 +145,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
 
     user = db.query(User).filter_by(email=email).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
 
     app_access_token = create_jwt({"sub": str(user.id)})
     app_refresh_token = secrets.token_urlsafe(32)

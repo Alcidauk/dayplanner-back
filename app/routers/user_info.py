@@ -15,7 +15,7 @@ def get_user_info(user: User = Depends(get_current_user), db: Session = Depends(
     if not db_user_info:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User info not found"
+            detail="Infos utilisateur non trouvée"
         )
     return db_user_info
 
@@ -44,13 +44,13 @@ def add_single_interest(request_body: dict,
     if not db_user_info:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User info not found. Please create user info first."
+            detail="Informations utilisateur non trouvées. Veuillez en ajouter."
         )
     existing_interests = db_user_info.interests or []
     if request_body['interest'] in existing_interests:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Interest already exists"
+            detail="Cet intéret existe déjà"
         )
     db_user_info.interests = existing_interests + [request_body['interest']]
     db.commit()
@@ -64,13 +64,13 @@ def remove_single_interest(data: dict, user: User = Depends(get_current_user), d
     if not db_user_info:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User info not found"
+            detail="Informations Utilisateur non trouvées"
         )
     existing_interests = db_user_info.interests or []
     if data['interest'] not in existing_interests:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Interest not found"
+            detail="Intérêt non trouvé"
         )
     db_user_info.interests = [i for i in existing_interests if i != data['interest']]
     db.commit()

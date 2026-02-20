@@ -3,11 +3,9 @@ from datetime import datetime, timedelta
 from jose import jwt
 
 from app.database.database import get_db
-from app.models.google_account import GoogleAccount
-from app.models.token import Token
 from app.models.user import User
 from config import SECRET_KEY, JWT_SECRET
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 

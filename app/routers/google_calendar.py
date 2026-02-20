@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/events")
 def get_calendar_events(user: User = Depends(get_current_user), date=""):
     if not user.google_account_id:
-        raise HTTPException(status_code=400, detail="Google account not linked")
+        raise HTTPException(status_code=400, detail="Compte Google non relié")
     try:
         creds = get_google_credentials(user)
         service = build("calendar", "v3", credentials=creds)
@@ -56,7 +56,7 @@ def get_calendar_events(user: User = Depends(get_current_user), date=""):
 @router.post("/add_google_event")
 def add_google_event(event_body: dict, user: User = Depends(get_current_user)):
     if not user.google_account:
-        raise HTTPException(status_code=403, detail="User not connected to Google")
+        raise HTTPException(status_code=403, detail="Utilisateur non connecté à Google")
     try:
         add_event_to_calendar(user, event_body)
         print(f'evenement ajouté: {event_body}')

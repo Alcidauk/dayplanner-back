@@ -48,7 +48,7 @@ def get_activities_from_ai(source: str = "openai", user: User = Depends(get_curr
     user_info = db.query(UserInfo).filter_by(user_id=user.id).first()
     if not user_info:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User info not found")
+                            detail="infos utilisateur non trouvées")
 
     place = user_info.place
     interests = user_info.interests
@@ -88,11 +88,12 @@ def get_activities_from_ai(source: str = "openai", user: User = Depends(get_curr
                                                              max_tokens=800)
             result_text = response.choices[0].message.content
         except requests.exceptions.ConnectionError:
-            raise HTTPException(status_code=503, detail=f"Ollama is not running.Make sure {source} is started.")
+            raise HTTPException(status_code=503, detail=f"{source} n'est pas en cours d'execution. Verifiez que {source}"
+                                                        f"est démarré.")
         except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail=f"Invalid JSON response from {source}")
+            raise HTTPException(status_code=500, detail=f"réponse JSON Invalide de{source}")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"{source} error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Erreur {source}: {str(e)}")
 
     elif source == "ollama":
         try:
@@ -107,13 +108,14 @@ def get_activities_from_ai(source: str = "openai", user: User = Depends(get_curr
             )
             result_text = response["response"]
         except requests.exceptions.ConnectionError:
-            raise HTTPException(status_code=503, detail=f"Ollama is not running.Make sure {source} is started.")
+            raise HTTPException(status_code=503, detail=f"{source} n'est pas en cours d'execution. Verifiez que {source}"
+                                                        f"est démarré.")
         except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail=f"Invalid JSON response from {source}")
+            raise HTTPException(status_code=500, detail=f"Réponse JSON invalide de {source}")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"{source} error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Erreur {source}: {str(e)}")
     else:
-        raise HTTPException(status_code=500, detail=f"source must be openai or ollama")
+        raise HTTPException(status_code=500, detail=f"La source doit etre openai ou ollama")
 
     result_json = json.loads(result_text)
     for activity in result_json['activities']:

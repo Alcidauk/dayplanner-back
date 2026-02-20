@@ -17,7 +17,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         User.email == user.email
     ).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="User already registered")
+        raise HTTPException(status_code=400, detail="L'utilisateur est déjà enregistré")
     hashed_password = hash_password(user.password)
     db_user = User(name=user.name, surname=user.surname, email=user.email, hashed_password=hashed_password)
     db.add(db_user)
