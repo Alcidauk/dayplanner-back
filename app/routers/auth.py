@@ -9,14 +9,14 @@ from app.authentication.auth import oauth, verify_password
 from app.database.database import get_db
 from app.models.google_account import GoogleAccount
 from app.models.token import Token
-from app.authentication.security import encrypt_token, create_jwt, get_current_user, decrypt_token
+from app.authentication.security import hash_token, create_jwt, get_current_user, decrypt_token, encrypt_token
 from app.models.user import User
 from app.schemas.user import LoginResponse, LoginRequest, RefreshTokenRequest
 from config import REDIRECT_URI_LOGIN, FRONTEND_URL
 import requests
 import secrets
 
-from constants import ONE_HOUR_IN_SECONDS
+from constants import FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION, SEVEN_DAYS_REFRESH_TOKEN_DURATION
 
 router = APIRouter()
 
@@ -39,11 +39,11 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
     access_token = create_jwt({"sub": str(user.id)})
     refresh_token_str = secrets.token_urlsafe(32)
-    expiry = datetime.utcnow() + timedelta(seconds=ONE_HOUR_IN_SECONDS)
+    expiry = datetime.utcnow() + timedelta(seconds=FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION)
 
     token_obj = Token(
-        access_token=encrypt_token(access_token),
-        refresh_token=encrypt_token(refresh_token_str),
+        access_token=hash_token(access_token),
+        refresh_token=hash_token(refresh_token_str),
         token_expiry=expiry,
         user_id=user.id
     )
@@ -59,7 +59,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     return {
         "access_token": access_token,
         "refresh_token": refresh_token_str,
-        "expires_in": ONE_HOUR_IN_SECONDS,
+        "expires_in": FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION,
         "token_type": "bearer",
         "user": {
             "id": user.id,
@@ -73,53 +73,47 @@ def refresh_token(data: RefreshTokenRequest, db: Session = Depends(get_db)):
     """
     Rafraîchir l'access token avec le refresh token
     """
-    try:
-        token_record = db.query(Token).filter(
-            Token.refresh_token == encrypt_token(data.refresh_token),
-            Token.token_expiry > datetime.utcnow()
-        ).first()
+    encrypted_refresh = hash_token(data.refresh_token)
+    token_record = db.query(Token).filter(
+        Token.refresh_token == encrypted_refresh,
+        Token.token_expiry > datetime.utcnow()
+    ).first()
 
-        if not token_record:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Le refresh token est invalide ou expiré"
-            )
-
-        user = db.query(User).filter(id=token_record.user_id).first()
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Utilisateur non trouvé"
-            )
-
-        new_access_token = create_jwt({"sub": str(user.id)})
-
-        new_refresh_token = secrets.token_urlsafe(32)
-        new_expiry = datetime.utcnow() + timedelta(seconds=ONE_HOUR_IN_SECONDS)
-
-        token_record.access_token = encrypt_token(new_access_token)
-        token_record.refresh_token = encrypt_token(new_refresh_token)
-        token_record.token_expiry = new_expiry
-
-        db.commit()
-
-        return {
-            "access_token": new_access_token,
-            "refresh_token": new_refresh_token,
-            "expires_in": ONE_HOUR_IN_SECONDS,
-            "token_type": "bearer",
-            "user": {
-                "id": user.id,
-                "email": user.email,
-            }
-        }
-
-    except Exception as e:
+    if not token_record:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
+            detail="Refresh token invalide ou expiré"
         )
+
+    user = db.query(User).filter_by(id=token_record.user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Utilisateur non trouvé"
+        )
+
+    new_access_token = create_jwt({"sub": str(user.id)})
+
+    new_refresh_token = secrets.token_urlsafe(32)
+    new_refresh_expiry = datetime.utcnow() + timedelta(seconds=SEVEN_DAYS_REFRESH_TOKEN_DURATION)
+
+    token_record.access_token = hash_token(new_access_token)
+    token_record.refresh_token = hash_token(new_refresh_token)
+    token_record.token_expiry = new_refresh_expiry
+
+    db.commit()
+
+    return {
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
+        "expires_in": FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+        }
+    }
 
 
 @router.get("/google/login")
@@ -151,10 +145,9 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     app_refresh_token = secrets.token_urlsafe(32)
 
     token = Token(
-        access_token=encrypt_token(app_access_token),
-        refresh_token=encrypt_token(app_refresh_token),
-        token_expiry=datetime.utcnow() + timedelta(seconds=ONE_HOUR_IN_SECONDS),
-
+        access_token=hash_token(app_access_token),
+        refresh_token=hash_token(app_refresh_token),
+        token_expiry=datetime.utcnow() + timedelta(seconds=FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION),
         google_access_token=encrypt_token(token_data.get("access_token")),
         google_refresh_token=encrypt_token(token_data.get("refresh_token")),
         google_token_expiry=datetime.utcnow() + timedelta(seconds=token_data.get("expires_in")),
@@ -174,7 +167,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
 
     account.token_id = token.id
     if token_data.get("refresh_token"):
-        account.google_refresh_token = encrypt_token(token_data["refresh_token"])
+        account.google_refresh_token = hash_token(token_data["refresh_token"])
     account.user_id = user.id
     db.add(account)
     db.commit()
@@ -182,7 +175,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
     params = urlencode({
         "accessToken": app_access_token,
         "refreshToken": app_refresh_token,
-        "expiresIn": ONE_HOUR_IN_SECONDS,
+        "expiresIn": FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION,
     })
 
     redirect_url = f"{FRONTEND_URL}/google-callback?{params}"

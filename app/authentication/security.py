@@ -9,6 +9,16 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
+from constants import FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION
+
+import hmac
+import hashlib
+
+
+def hash_token(token: str) -> str:
+    return hmac.new(SECRET_KEY.encode("utf-8"), token.encode(), hashlib.sha256).hexdigest()
+
+
 fernet = Fernet(SECRET_KEY.encode())
 
 
@@ -20,9 +30,12 @@ def decrypt_token(token_encrypted: str) -> str:
     return fernet.decrypt(token_encrypted.encode()).decode()
 
 
-def create_jwt(data: dict) -> str:
+def create_jwt(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=15)
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, JWT_SECRET, algorithm="HS256")
 
