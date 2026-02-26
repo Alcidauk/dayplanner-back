@@ -38,7 +38,7 @@ def add_activity(activity: dict,
 
 @router.delete("/delete_activity/{activity_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_activity(activity_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    activity = db.query(Activity).filter_by(id=activity_id, user_id=user.id).first()
+    activity = db.query(Activity).filter_by(id=activity_id, user_id=user.id, source="user").first()
     if not activity:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
