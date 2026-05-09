@@ -1,23 +1,18 @@
 import json
-import requests
-import ollama
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
+import requests
+from app.lib.rag import build_rag_prompt, call_llm
 from app.models.activity import Activity
 from app.schemas.activity import ActivityResponse
-from config import OPENAI_API_KEY, OLLAMA_MODEL, OLLAMA_BASE_URL
-from openai import OpenAI
 
 from app.models.user import User
 from app.models.user_info import UserInfo
 from app.authentication.security import get_current_user, get_db
 from sqlalchemy import desc
+from app.lib.retriever import fetch_real_places
 
 router = APIRouter()
-
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
-ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
 
 
 @router.post("/add_activity", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
@@ -56,88 +51,39 @@ def get_activities_from_db(user: User = Depends(get_current_user), db: Session =
 
 
 @router.get("/activities/{source}")
-def get_activities_from_ai(source: str = "openai", user: User = Depends(get_current_user),
-                               db: Session = Depends(get_db)):
+def get_activities_from_ai(
+    source: str = "openai",
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     user_info = db.query(UserInfo).filter_by(user_id=user.id).first()
     if not user_info:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="infos utilisateur non trouvées")
+        raise HTTPException(status_code=404, detail="Infos utilisateur non trouvées")
 
     place = user_info.place
-    interests = user_info.interests
-    already_suggested_activities = db.query(Activity).filter_by(user_id=user.id).all()
-    prompt = f"""
-    Tu es une API.
+    interests = user_info.interests if isinstance(user_info.interests, list) else [user_info.interests]
+    already_suggested = [a.title for a in db.query(Activity).filter_by(user_id=user.id).all()]
 
-    Réponds UNIQUEMENT par un JSON valide. Aucun texte. Aucune explication. Aucun markdown. Pas de ```.
-    Format EXACT attendu :
-    {{
-      "activities": [
-        {{
-          "title": "string",
-          "description": "string",
-          "location": "string",
-          "duration": "string"
-        }}
-      ]
-    }}
-    Lieu : {place}
-    Centres d'intérêt : {', '.join(interests) if isinstance(interests, list) else interests}
-    Les activités proposées ne doivent pas figurer 
-    dans la liste des activités déjà proposées : {[asa.title for asa in already_suggested_activities]} 
-    et doivent être des activités réelles
-    """
-    if source == "openai":
-        try:
-            response = openai_client.chat.completions.create(model="gpt-4o-mini",
-                                                             messages=[
-                                                                 {"role": "system",
-                                                                  "content":
-                                                                      "Tu es un assistant expert"
-                                                                      "en suggestions d'activités."},
-                                                                 {"role": "user", "content": prompt}
-                                                             ],
-                                                             temperature=0.7,
-                                                             max_tokens=800)
-            result_text = response.choices[0].message.content
-        except requests.exceptions.ConnectionError:
-            raise HTTPException(status_code=503, detail=f"{source} n'est pas en cours d'execution. Verifiez que {source}"
-                                                        f"est démarré.")
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail=f"réponse JSON Invalide de{source}")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erreur {source}: {str(e)}")
-
-    elif source == "ollama":
-        try:
-            response = ollama_client.generate(
-                model=OLLAMA_MODEL,
-                prompt=prompt,
-                stream=False,
-                format="json",
-                options={
-                    "temperature": 0.7
-                }
-            )
-            result_text = response["response"]
-        except requests.exceptions.ConnectionError:
-            raise HTTPException(status_code=503, detail=f"{source} n'est pas en cours d'execution. Verifiez que {source}"
-                                                        f"est démarré.")
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail=f"Réponse JSON invalide de {source}")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erreur {source}: {str(e)}")
-    else:
-        raise HTTPException(status_code=500, detail=f"La source doit etre openai ou ollama")
-
-    result_json = json.loads(result_text)
-    for activity in result_json['activities']:
-        activity_obj = Activity(title=activity['title'],
-                                description=activity['description'],
-                                location=activity['location'],
-                                duration=activity['duration'],
-                                user_id=user.id,
-                                source=source)
-        db.add(activity_obj)
-    db.commit()
-    return result_json
+    real_places = fetch_real_places(place, interests, source=source)
+    prompt = build_rag_prompt(place, interests, real_places, already_suggested)
+    try:
+        result_text = call_llm(source, prompt)
+        result_json = json.loads(result_text)
+        for activity in result_json["activities"]:
+            db.add(Activity(
+                title=activity["title"],
+                description=activity["description"],
+                location=activity["location"],
+                duration=activity["duration"],
+                user_id=user.id,
+                source=source
+            ))
+        db.commit()
+        return result_json
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail=f"{source} n'est pas en cours d'execution. Verifiez que {source}"
+                                                    f"est démarré.")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail=f"Réponse JSON invalide de {source}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur {source}: {str(e)}")

@@ -18,5 +18,7 @@ dependencies = [
     "passlib==1.7.4",
     "pydantic[email]",
     "alembic",
-    "ollama"
+    "ollama",
+    "geopy==2.4.1",
+    "httpx==0.28.1"
 ]
