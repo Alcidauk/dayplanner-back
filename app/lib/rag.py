@@ -36,8 +36,8 @@ def build_rag_prompt(place: str, interests: list, real_places: list[dict], alrea
         }}
       ]
     }}
+    
     {context_block}
-
     Centres d'intérêt de l'utilisateur : {', '.join(interests) if isinstance(interests, list) else interests}
     Activités déjà proposées à exclure : {already_suggested}
 
@@ -55,7 +55,7 @@ def call_llm(source, prompt):
                                                                   "en suggestions d'activités."},
                                                              {"role": "user", "content": prompt}
                                                          ],
-                                                         temperature=0.7,
+                                                         temperature=0,
                                                          max_tokens=800)
         result_text = response.choices[0].message.content
 
@@ -66,7 +66,7 @@ def call_llm(source, prompt):
             stream=False,
             format="json",
             options={
-                "temperature": 0.7
+                "temperature": 0
             }
         )
         result_text = response["response"]

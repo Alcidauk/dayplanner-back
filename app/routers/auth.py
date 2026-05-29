@@ -149,7 +149,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
         refresh_token=hash_token(app_refresh_token),
         token_expiry=datetime.utcnow() + timedelta(seconds=FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION),
         google_access_token=encrypt_token(token_data.get("access_token")),
-        google_refresh_token=encrypt_token(token_data.get("refresh_token")),
+        google_refresh_token=encrypt_token(token_data.get("refresh_token")) if token_data.get("refresh_token") else None,
         google_token_expiry=datetime.utcnow() + timedelta(seconds=token_data.get("expires_in")),
         google_account_id=account.id,
         user_id=user.id

@@ -52,7 +52,7 @@ def interests_to_osm_tags(interests: list[str], source) -> list[tuple[str, str]]
 
 
 def geocode_place(place: str) -> tuple[float, float] | None:
-    geolocator = Nominatim(user_agent="activity-rag-app")
+    geolocator = Nominatim(user_agent="dayplanner")
     location = geolocator.geocode(place)
     if location:
         return location.latitude, location.longitude
@@ -84,7 +84,6 @@ def fetch_real_places(place: str, interests: list[str], source) -> list[dict]:
     try:
         tags = interests_to_osm_tags(interests, source)
     except Exception:
-        # Fallback générique si le LLM échoue
         tags = [("tourism", "attraction"), ("leisure", "park"), ("amenity", "theatre")]
 
     query = build_overpass_query(lat, lon, tags)
@@ -92,10 +91,11 @@ def fetch_real_places(place: str, interests: list[str], source) -> list[dict]:
     url = f"https://overpass-api.de/api/interpreter?data={encoded_query}"
     try:
 
-        response = httpx.get(url, timeout=30, headers={
-        "User-Agent": "DayPlanner/1.0",
-        "Accept": "application/json"}
-                             )
+        response = httpx.get(url, timeout=30,
+                             headers={
+                                 "User-Agent": "DayPlanner/1.0",
+                                 "Accept": "application/json"
+                             })
         response.raise_for_status()
         elements = response.json().get("elements", [])
 
