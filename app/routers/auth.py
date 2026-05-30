@@ -119,7 +119,12 @@ def refresh_token(data: RefreshTokenRequest, db: Session = Depends(get_db)):
 @router.get("/google/login")
 async def login_via_google(request: Request):
     redirect_uri = REDIRECT_URI_LOGIN
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    return await oauth.google.authorize_redirect(
+        request,
+        redirect_uri,
+        access_type="offline",
+        prompt="consent"
+    )
 
 
 @router.get("/google/callback")
@@ -149,7 +154,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
         refresh_token=hash_token(app_refresh_token),
         token_expiry=datetime.utcnow() + timedelta(seconds=FIFTEEN_MINUTES_ACCESS_TOKEN_DURATION),
         google_access_token=encrypt_token(token_data.get("access_token")),
-        google_refresh_token=encrypt_token(token_data.get("refresh_token")) if token_data.get("refresh_token") else None,
+        google_refresh_token=encrypt_token(token_data.get("refresh_token")) or None,
         google_token_expiry=datetime.utcnow() + timedelta(seconds=token_data.get("expires_in")),
         google_account_id=account.id,
         user_id=user.id
