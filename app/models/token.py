@@ -13,7 +13,7 @@ class Token(Base):
     google_account_id = Column(Integer, ForeignKey("google_accounts.id"), nullable=True)
     google_access_token = Column(String)
     google_refresh_token = Column(String)
-    google_token_expiry = Column(Integer)
+    google_token_expiry = Column(DateTime)
     user = relationship(
         "User",
         back_populates="token",
