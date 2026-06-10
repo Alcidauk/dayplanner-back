@@ -9,7 +9,7 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.get("/", response_model=UserInfoResponse)
+@router.get("", response_model=UserInfoResponse)
 def get_user_info(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     db_user_info = db.query(UserInfo).filter_by(user_id=user.id).first()
     if not db_user_info:
@@ -20,7 +20,7 @@ def get_user_info(user: User = Depends(get_current_user), db: Session = Depends(
     return db_user_info
 
 
-@router.post("/", response_model=UserInfoResponse)
+@router.post("", response_model=UserInfoResponse)
 def add_user_info(user_info: UserInfoCreate,
                   user: User = Depends(get_current_user),
                   db: Session = Depends(get_db)):
