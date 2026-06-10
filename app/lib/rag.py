@@ -3,7 +3,7 @@ import ollama
 from openai import OpenAI
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
-ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
+ollama_client = ollama.Client(host=OLLAMA_BASE_URL, timeout=3600)
 
 
 def build_rag_prompt(place: str, interests: list, real_places: list[dict], already_suggested: list[str]) -> str:
